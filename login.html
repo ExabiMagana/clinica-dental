@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión — Clínica Dental</title>
+
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="bg-light d-flex align-items-center min-vh-100">
+
+<div class="container">
+    <div class="login-container">
+
+        <div class="text-center mb-4">
+            <i class="bi bi-clipboard2-pulse login-logo"></i>
+            <h3 class="mt-2 mb-0">Clínica Dental</h3>
+            <p class="text-muted">Sistema de gestión</p>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+
+                <h5 class="mb-4 text-center">Iniciar sesión</h5>
+
+                <div id="alertaError" class="alert alert-danger d-none"></div>
+                <div id="alertaExpirado" class="alert alert-warning d-none">
+                    Tu sesión expiró. Vuelve a iniciar sesión.
+                </div>
+
+                <form id="formLogin" autocomplete="off" novalidate>
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label">Usuario</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="usuario" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" required>
+                            <button type="button" class="btn btn-outline-secondary" id="btnVer">
+                                <i class="bi bi-eye" id="iconoVer"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="btnLogin">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinner"></span>
+                        <span id="textoBtn">Ingresar</span>
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+        <p class="text-center text-muted small mt-4 mb-0">
+            &copy; <span id="anio"></span> Clínica Dental
+        </p>
+
+    </div>
+</div>
+
+<script src="js/bootstrap/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+    // Arranque
+    document.getElementById("anio").textContent = new Date().getFullYear();
+
+    // Si ya hay sesión, al dashboard
+    Auth.redirigirSiLogueado();
+
+    // Mensaje de sesión expirada
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expirado") === "1") {
+        document.getElementById("alertaExpirado").classList.remove("d-none");
+    }
+
+    // Mostrar/ocultar contraseña
+    const inputPwd = document.getElementById("password");
+    const iconoVer = document.getElementById("iconoVer");
+    document.getElementById("btnVer").addEventListener("click", () => {
+        const esTexto = inputPwd.type === "text";
+        inputPwd.type = esTexto ? "password" : "text";
+        iconoVer.className = esTexto ? "bi bi-eye" : "bi bi-eye-slash";
+    });
+
+    // Submit del formulario
+    const form = document.getElementById("formLogin");
+    const alerta = document.getElementById("alertaError");
+    const btn = document.getElementById("btnLogin");
+    const spinner = document.getElementById("spinner");
+    const textoBtn = document.getElementById("textoBtn");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        alerta.classList.add("d-none");
+
+        const usuario = document.getElementById("usuario").value.trim();
+        const password = inputPwd.value;
+
+        if (!usuario || !password) {
+            alerta.textContent = "Usuario y contraseña son obligatorios.";
+            alerta.classList.remove("d-none");
+            return;
+        }
+
+        btn.disabled = true;
+        spinner.classList.remove("d-none");
+        textoBtn.textContent = "Verificando…";
+
+        try {
+            await Auth.login(usuario, password);
+            window.location.href = "pages/dashboard.html";
+        } catch (err) {
+            let msg = "No se pudo iniciar sesión.";
+            if (err.status === 401) msg = "Usuario o contraseña incorrectos.";
+            else if (err.status === 429) msg = "Demasiados intentos. Espera un minuto.";
+            else if (err.status === 0) msg = "No se pudo conectar con el servidor.";
+            else if (err.message) msg = err.message;
+
+            alerta.textContent = msg;
+            alerta.classList.remove("d-none");
+
+            btn.disabled = false;
+            spinner.classList.add("d-none");
+            textoBtn.textContent = "Ingresar";
+        }
+    });
+</script>
+</body>
+</html>

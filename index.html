@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clínica Dental</title>
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+    if (Auth.estaLogueado()) {
+        window.location.href = "pages/dashboard.html";
+    } else {
+        window.location.href = "login.html";
+    }
+</script>
+</body>
+</html>
