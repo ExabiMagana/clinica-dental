@@ -38,7 +38,6 @@
                         <option value="">Todos</option>
                         <option value="M">Masculino</option>
                         <option value="F">Femenino</option>
-                        <option value="O">Otro</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -93,6 +92,97 @@
         </div>
     </div>
 
+</div>
+
+<!-- Modal: Crear / Editar paciente -->
+<div class="modal fade" id="modalPaciente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formPaciente" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModal">Nuevo paciente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="pacienteId">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombres *</label>
+                            <input type="text" class="form-control" id="nombres" required maxlength="100">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Apellidos *</label>
+                            <input type="text" class="form-control" id="apellidos" required maxlength="100">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Documento</label>
+                            <input type="text" class="form-control" id="documento" maxlength="30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha de nacimiento *</label>
+                            <input type="date" class="form-control" id="fechaNacimiento" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sexo *</label>
+                            <select class="form-select" id="sexo" required>
+                                <option value="">Seleccione…</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono" maxlength="30">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Correo</label>
+                            <input type="email" class="form-control" id="email" maxlength="150">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="direccion" maxlength="300">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Contacto de emergencia</label>
+                            <input type="text" class="form-control" id="contactoEmergenciaNombre" maxlength="150">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono de emergencia</label>
+                            <input type="text" class="form-control" id="contactoEmergenciaTelefono" maxlength="30">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" rows="2"></textarea>
+                        </div>
+
+                        <div class="col-12" id="contenedorActivo" style="display:none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="activo">
+                                <label class="form-check-label" for="activo">Paciente activo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="erroresFormulario"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardar">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinnerGuardar"></span>
+                        <span id="textoGuardar">Guardar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script src="../js/bootstrap/bootstrap.bundle.min.js"></script>

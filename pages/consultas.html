@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas — Clínica Dental</title>
+
+    <link rel="stylesheet" href="../css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="../lib/bootstrap-icons/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/estilos.css">
+</head>
+<body>
+
+<div id="app-layout"></div>
+
+<div id="app-contenido" style="display:none;">
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Paciente</label>
+                    <select class="form-select form-select-sm" id="filtroPaciente">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">Desde</label>
+                    <input type="date" class="form-control form-control-sm" id="filtroDesde">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">Hasta</label>
+                    <input type="date" class="form-control form-control-sm" id="filtroHasta">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">Con cita</label>
+                    <select class="form-select form-select-sm" id="filtroConCita">
+                        <option value="">Todas</option>
+                        <option value="true">Solo con cita</option>
+                        <option value="false">Solo espontáneas</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button class="btn btn-sm btn-primary flex-grow-1" id="btnBuscar">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary flex-grow-1" id="btnLimpiar">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </button>
+                </div>
+
+                <div class="col-md-9">
+                    <label class="form-label mb-1">Buscar en motivo / diagnóstico</label>
+                    <input type="text" class="form-control form-control-sm" id="filtroBusqueda"
+                           placeholder="Ej: dolor, caries, endodoncia…">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span>
+                Listado de consultas
+                <span class="badge bg-secondary" id="totalConsultas">0</span>
+            </span>
+            <button class="btn btn-sm btn-success" id="btnNueva">
+                <i class="bi bi-plus-lg"></i> Nueva consulta
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Paciente</th>
+                        <th>Odontólogo</th>
+                        <th>Motivo</th>
+                        <th>Diagnóstico</th>
+                        <th>Origen</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaConsultas">
+                    <tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+            <div class="text-muted small" id="infoPaginacion">—</div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
+            </nav>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     Modal: Crear / Editar consulta
+     ══════════════════════════════════════════════ -->
+<div class="modal fade" id="modalConsulta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formConsulta" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModal">Nueva consulta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="consultaId">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Paciente *</label>
+                            <select class="form-select" id="pacienteId" required></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Odontólogo *</label>
+                            <select class="form-select" id="odontologoId" required></select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cita asociada (opcional)</label>
+                            <select class="form-select" id="citaId">
+                                <option value="">Sin cita (consulta espontánea)</option>
+                            </select>
+                            <small class="text-muted">
+                                Al guardar, la cita pasará automáticamente a "Atendida".
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha</label>
+                            <input type="datetime-local" class="form-control" id="fecha">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Motivo de consulta *</label>
+                            <input type="text" class="form-control" id="motivoConsulta"
+                                   maxlength="300" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Diagnóstico</label>
+                            <textarea class="form-control" id="diagnostico" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Procedimientos realizados</label>
+                            <textarea class="form-control" id="procedimientosRealizados" rows="3"></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Medicamentos</label>
+                            <textarea class="form-control" id="medicamentos" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Recomendaciones</label>
+                            <textarea class="form-control" id="recomendaciones" rows="2"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="erroresFormulario"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardar">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinnerGuardar"></span>
+                        <span id="textoGuardar">Guardar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="../js/bootstrap/bootstrap.bundle.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/toast.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/consultas.js"></script>
+<script>
+    Layout.render({ seccion: "consultas", titulo: "Consultas" });
+</script>
+</body>
+</html>

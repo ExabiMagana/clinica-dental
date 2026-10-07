@@ -1,8 +1,15 @@
 window.onLayoutReady = function () {
+
+    // Referencias
     const tabla = document.getElementById("tablaPacientes");
     const paginacion = document.getElementById("paginacion");
     const infoPaginacion = document.getElementById("infoPaginacion");
     const totalBadge = document.getElementById("totalPacientes");
+
+    const modalElement = document.getElementById("modalPaciente");
+    const modal = new bootstrap.Modal(modalElement);
+    const form = document.getElementById("formPaciente");
+    const alertaForm = document.getElementById("erroresFormulario");
 
     const estado = {
         pagina: 1,
@@ -10,7 +17,7 @@ window.onLayoutReady = function () {
         filtros: { busqueda: "", activo: "true", sexo: "" }
     };
 
-    // Cargar listado
+    // Listado
     async function cargar() {
         tabla.innerHTML =
             `<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>`;
@@ -78,7 +85,8 @@ window.onLayoutReady = function () {
         `).join("");
 
         tabla.querySelectorAll("button[data-accion]").forEach(btn => {
-            btn.addEventListener("click", () => manejarAccion(btn.dataset.accion, parseInt(btn.dataset.id)));
+            btn.addEventListener("click", () =>
+                manejarAccion(btn.dataset.accion, parseInt(btn.dataset.id)));
         });
     }
 
@@ -153,39 +161,142 @@ window.onLayoutReady = function () {
         crearBoton("»", data.pagina + 1, data.pagina === data.totalPaginas);
     }
 
-    // Acciones
+    // Acciones de la fila
     async function manejarAccion(accion, id) {
         if (accion === "expediente") {
-            Toast.info("El expediente del paciente se implementará en la próxima etapa.");
+            window.location.href = "historia-medica.html?pacienteId=" + id;
             return;
         }
-        if (accion === "editar") {
-            Toast.info("El modal de edición se implementará en la próxima etapa.");
-            return;
-        }
-        if (accion === "desactivar") {
-            if (!confirm("¿Desactivar este paciente?")) return;
-            try {
-                await Api.delete("/pacientes/" + id);
-                Toast.exito("Paciente desactivado.");
-                cargar();
-            } catch (err) {
-                if (err.status !== 401) Toast.error("No se pudo desactivar: " + err.message);
-            }
-            return;
-        }
-        if (accion === "reactivar") {
-            if (!confirm("¿Reactivar este paciente?")) return;
-            try {
-                await Api.patch("/pacientes/" + id + "/reactivar");
-                Toast.exito("Paciente reactivado.");
-                cargar();
-            } catch (err) {
-                if (err.status !== 401) Toast.error("No se pudo reactivar: " + err.message);
-            }
-            return;
+        if (accion === "editar") return abrirEditar(id);
+        if (accion === "desactivar") return desactivar(id);
+        if (accion === "reactivar") return reactivar(id);
+    }
+
+    async function desactivar(id) {
+        if (!confirm("¿Desactivar este paciente? Se marcará como inactivo, no se elimina.")) return;
+        try {
+            await Api.delete("/pacientes/" + id);
+            Toast.exito("Paciente desactivado.");
+            cargar();
+        } catch (err) {
+            if (err.status !== 401) Toast.error("No se pudo desactivar: " + err.message);
         }
     }
+
+    async function reactivar(id) {
+        if (!confirm("¿Reactivar este paciente?")) return;
+        try {
+            await Api.patch("/pacientes/" + id + "/reactivar");
+            Toast.exito("Paciente reactivado.");
+            cargar();
+        } catch (err) {
+            if (err.status !== 401) Toast.error("No se pudo reactivar: " + err.message);
+        }
+    }
+
+    // Modal: crear / editar
+    document.getElementById("btnNuevo").addEventListener("click", abrirNuevo);
+
+    function abrirNuevo() {
+        form.reset();
+        document.getElementById("pacienteId").value = "";
+        document.getElementById("tituloModal").textContent = "Nuevo paciente";
+        document.getElementById("contenedorActivo").style.display = "none";
+        ocultarErroresForm();
+        modal.show();
+    }
+
+    async function abrirEditar(id) {
+        try {
+            const p = await Api.get("/pacientes/" + id);
+
+            document.getElementById("tituloModal").textContent = "Editar paciente";
+            document.getElementById("pacienteId").value = p.id;
+            document.getElementById("nombres").value = p.nombres ?? "";
+            document.getElementById("apellidos").value = p.apellidos ?? "";
+            document.getElementById("documento").value = p.documento ?? "";
+            document.getElementById("fechaNacimiento").value =
+                (p.fechaNacimiento || "").substring(0, 10);
+            document.getElementById("sexo").value = p.sexo ?? "";
+            document.getElementById("telefono").value = p.telefono ?? "";
+            document.getElementById("email").value = p.email ?? "";
+            document.getElementById("direccion").value = p.direccion ?? "";
+            document.getElementById("contactoEmergenciaNombre").value =
+                p.contactoEmergenciaNombre ?? "";
+            document.getElementById("contactoEmergenciaTelefono").value =
+                p.contactoEmergenciaTelefono ?? "";
+            document.getElementById("observaciones").value = p.observaciones ?? "";
+
+            document.getElementById("contenedorActivo").style.display = "block";
+            document.getElementById("activo").checked = p.activo;
+
+            ocultarErroresForm();
+            modal.show();
+        } catch (err) {
+            if (err.status !== 401) Toast.error("No se pudo cargar el paciente: " + err.message);
+        }
+    }
+
+    // Submit del modal
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        ocultarErroresForm();
+
+        const id = document.getElementById("pacienteId").value;
+        const esEdicion = !!id;
+
+        const body = {
+            nombres: document.getElementById("nombres").value.trim(),
+            apellidos: document.getElementById("apellidos").value.trim(),
+            documento: document.getElementById("documento").value.trim() || null,
+            fechaNacimiento: document.getElementById("fechaNacimiento").value,
+            sexo: document.getElementById("sexo").value,
+            telefono: document.getElementById("telefono").value.trim() || null,
+            email: document.getElementById("email").value.trim() || null,
+            direccion: document.getElementById("direccion").value.trim() || null,
+            contactoEmergenciaNombre:
+                document.getElementById("contactoEmergenciaNombre").value.trim() || null,
+            contactoEmergenciaTelefono:
+                document.getElementById("contactoEmergenciaTelefono").value.trim() || null,
+            observaciones: document.getElementById("observaciones").value.trim() || null
+        };
+
+        if (esEdicion) {
+            body.activo = document.getElementById("activo").checked;
+        }
+
+        // Validación mínima en el cliente
+        if (!body.nombres || !body.apellidos || !body.fechaNacimiento || !body.sexo) {
+            mostrarErroresForm(["Nombres, apellidos, fecha de nacimiento y sexo son obligatorios."]);
+            return;
+        }
+
+        const btn = document.getElementById("btnGuardar");
+        const spinner = document.getElementById("spinnerGuardar");
+        const texto = document.getElementById("textoGuardar");
+        btn.disabled = true;
+        spinner.classList.remove("d-none");
+        texto.textContent = "Guardando…";
+
+        try {
+            if (esEdicion) {
+                await Api.put("/pacientes/" + id, body);
+                Toast.exito("Paciente actualizado.");
+            } else {
+                await Api.post("/pacientes", body);
+                Toast.exito("Paciente creado.");
+            }
+            modal.hide();
+            cargar();
+        } catch (err) {
+            if (err.status === 401) return;
+            mostrarErroresForm(extraerMensajesError(err));
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add("d-none");
+            texto.textContent = "Guardar";
+        }
+    });
 
     // Filtros
     document.getElementById("btnBuscar").addEventListener("click", () => {
@@ -212,10 +323,6 @@ window.onLayoutReady = function () {
         }
     });
 
-    document.getElementById("btnNuevo").addEventListener("click", () => {
-        Toast.info("El modal de creación se implementará en la próxima etapa.");
-    });
-
     // Helpers
     function esc(texto) {
         if (texto === null || texto === undefined) return "";
@@ -226,6 +333,31 @@ window.onLayoutReady = function () {
 
     function etiquetaSexo(s) {
         return { "M": "Masculino", "F": "Femenino" }[s] || "—";
+    }
+
+    function mostrarErroresForm(mensajes) {
+        alertaForm.innerHTML = "<ul class='mb-0'>" +
+            mensajes.map(m => `<li>${esc(m)}</li>`).join("") +
+            "</ul>";
+        alertaForm.classList.remove("d-none");
+    }
+
+    function ocultarErroresForm() {
+        alertaForm.classList.add("d-none");
+        alertaForm.innerHTML = "";
+    }
+
+    function extraerMensajesError(err) {
+        // Errores de validación del backend: { errores: { Campo: ["msg", ...] } }
+        if (err.data && err.data.errores) {
+            const lista = [];
+            for (const campo in err.data.errores) {
+                err.data.errores[campo].forEach(m => lista.push(m));
+            }
+            return lista;
+        }
+        // Error genérico con mensaje
+        return [err.message || "Error al guardar."];
     }
 
     // Arranque
